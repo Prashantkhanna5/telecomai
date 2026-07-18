@@ -1,0 +1,57 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # GCP Project ID
+  GAR_LOCATION: ${{ secrets.GCP_GAR_LOCATION || 'us-central1' }} # Artifact Registry region (e.g. us-central1)
+  REPOSITORY: ${{ secrets.GCP_GAR_REPOSITORY }} # Artifact Registry repository name
+  SERVICE: teleheal-node # Cloud Run service name
+  REGION: ${{ secrets.GCP_REGION || 'us-central1' }} # Cloud Run region
+
+jobs:
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }} # Service Account Key JSON configured in GitHub secrets
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Authorize Docker Push
+      run: |-
+        gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+    - name: Build and Push Docker Image
+      run: |-
+        docker build -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}" .
+        docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}"
+
+    - name: Deploy to Cloud Run
+      id: deploy
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: ${{ env.SERVICE }}
+        region: ${{ env.REGION }}
+        image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}
+        flags: '--allow-unauthenticated'
+        env_vars: |
+          DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}
+          PORT=8080
+
+    - name: Show Service URL
+      run: echo "Service URL is ${{ steps.deploy.outputs.url }}"
