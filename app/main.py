@@ -245,9 +245,19 @@ def run_agent_interactive(message: str, max_loops: int):
         console_logs.append(f"\n❌ Error during execution: {str(e)}")
         yield "\n".join(console_logs), "An internal error occurred during self-healing workflow execution.", "Error loading telemetry"
 
+def launch_app(port: int):
+    print(f"Starting TeleHeal Web Service on port {port}...")
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=port,
+        share=False,
+        theme=gr.themes.Default(),
+        css=custom_css
+    )
+
 # Create Gradio interface
-with gr.Blocks(theme=gr.themes.Default(), css=custom_css) as demo:
-    with gr.Div(elem_classes="header-container"):
+with gr.Blocks() as demo:
+    with gr.Group(elem_classes="header-container"):
         gr.Markdown("# 📡 TeleHeal Node", elem_classes="header-title")
         gr.Markdown("Autonomous Network Troubleshooting & Self-Healing Agent powered by DeepSeek & LangGraph", elem_classes="header-subtitle")
         
@@ -327,5 +337,4 @@ with gr.Blocks(theme=gr.themes.Default(), css=custom_css) as demo:
 if __name__ == "__main__":
     # Get port from environment (essential for Google Cloud Run deployment)
     port = int(os.environ.get("PORT", 8080))
-    print(f"Starting TeleHeal Web Service on port {port}...")
-    demo.launch(server_name="0.0.0.0", server_port=port, share=False)
+    launch_app(port)
