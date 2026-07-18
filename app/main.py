@@ -111,6 +111,10 @@ body, .gradio-container {
 
 /* Hide Gradio footer logo */
 footer {visibility: hidden !important;}
+
+.margin-top-20 {
+    margin-top: 20px !important;
+}
 """
 
 # Compile the agent graph
@@ -295,7 +299,7 @@ with gr.Blocks() as demo:
                 gr.Markdown("### 📊 Live Telemetry Dashboard")
                 telemetry_output = gr.HTML(value=generate_telemetry_html({}))
                 
-            with gr.Column(elem_classes="glass-panel", style="margin-top: 20px;"):
+            with gr.Column(elem_classes="glass-panel margin-top-20"):
                 gr.Markdown("### 💻 Agent Console & Resolution")
                 
                 with gr.Tab("Reasoning & Tool Execution Log"):
