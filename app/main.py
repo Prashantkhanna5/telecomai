@@ -250,14 +250,23 @@ def run_agent_interactive(message: str, max_loops: int):
         yield "\n".join(console_logs), "An internal error occurred during self-healing workflow execution.", "Error loading telemetry"
 
 def launch_app(port: int):
-    print(f"Starting TeleHeal Web Service on port {port}...")
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=port,
-        share=False,
-        theme=gr.themes.Default(),
-        css=custom_css
-    )
+    try:
+        print(f"Starting TeleHeal Web Service on port {port}...")
+        demo.launch(
+            server_name="0.0.0.0",
+            server_port=port,
+            share=False,
+            theme=gr.themes.Default(),
+            css=custom_css
+        )
+    except OSError as e:
+        # Check if port is already in use
+        if "bind" in str(e).lower() or "port" in str(e).lower() or "10048" in str(e):
+            fallback_port = port + 1
+            print(f"⚠️ Port {port} is occupied. Trying fallback port {fallback_port}...")
+            launch_app(fallback_port)
+        else:
+            raise e
 
 # Create Gradio interface
 with gr.Blocks() as demo:
